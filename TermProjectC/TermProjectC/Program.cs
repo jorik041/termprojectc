@@ -65,7 +65,7 @@ namespace TermProjectC
                 listener.Start();
                 client = listener.AcceptTcpClient();
                 client.GetStream().Read(buffer, 0, 1024);
-                str = Encoding.ASCII.GetString(buffer);
+                str = Encoding.UTF32.GetString(buffer);
                 Console.WriteLine("Stranger Wrote:");
                 Console.WriteLine(str);
                 //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
@@ -85,9 +85,18 @@ namespace TermProjectC
              while (true)
              {               
                 client.GetStream().Read(buffer, 0, 1024);
-                str = Encoding.ASCII.GetString(buffer);
-                str.Replace("\n","");
-                Console.WriteLine("Stranger wrote:" + str);
+                str = Encoding.UTF32.GetString(buffer);
+                //Console.WriteLine("Stranger wrote:" + str);
+                Console.Write("Stranger wrote:");
+                int i = 0;
+                 while (str[i] != '\0')
+                 {
+                    Console.Write(str[i++]);
+                 }
+                 Console.Write("\n You Wrote: ");
+                     str = "";
+                client.GetStream().Flush();
+                buffer = new byte [1024];
                 //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
                 //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
                 input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
@@ -122,7 +131,8 @@ namespace TermProjectC
         public void SendMessage(string text)
         {
             byte[] buffer = new byte[1024];
-            buffer = Encoding.ASCII.GetBytes(text);
+            text += '\0';
+            buffer = Encoding.UTF32.GetBytes(text);
             client.GetStream().Write(buffer, 0, buffer.Length);
         }
         public void Connect(IPAddress ip)
