@@ -19,7 +19,8 @@ namespace TermProjectC
         {
             int inp_port = Convert.ToInt32(Console.ReadLine());
             int out_port = Convert.ToInt32(Console.ReadLine());
-            Server serv = new Server(inp_port);
+            Server serv = null;
+            serv = new Server(inp_port);        
             Thread Thread = new Thread(new ThreadStart(serv.HandlingWithoutClosing));
             Thread.Start();
             Client client;
@@ -32,7 +33,11 @@ namespace TermProjectC
                 client = new Client(out_port);
                 client.Connect(IPAddress.Loopback);
             }
-            client.SendMessage(Console.ReadLine());
+            while (true)
+            {
+                client.SendMessage(Console.ReadLine());
+                string debug = serv.Debug();
+            }
         }
     }
     class Server
@@ -44,11 +49,13 @@ namespace TermProjectC
         private static byte[] buffer;
         private static string str;
         public TcpClient GetClient() { return client; }
+        public string Debug() { return str; }
         public Server(int port)
         {
             listener = new TcpListener(IPAddress.Any, port);
             client = new TcpClient();
             buffer = new byte [1024];
+            str = "";
            
         }
         public void Handling()
@@ -59,9 +66,10 @@ namespace TermProjectC
                 client = listener.AcceptTcpClient();
                 client.GetStream().Read(buffer, 0, 1024);
                 str = Encoding.ASCII.GetString(buffer);
+                Console.WriteLine("Stranger Wrote:");
                 Console.WriteLine(str);
                 //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
-                Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
+                //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
                 input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
                 client.Close();
                 listener.Stop();
@@ -70,14 +78,18 @@ namespace TermProjectC
         public void HandlingWithoutClosing()
         {
              listener.Start();
+             //client = listener.AcceptTcpClient();
+             while (!listener.Pending());
+             Console.WriteLine("Connection set up");
              client = listener.AcceptTcpClient();
              while (true)
-             {
+             {               
                 client.GetStream().Read(buffer, 0, 1024);
                 str = Encoding.ASCII.GetString(buffer);
-                Console.WriteLine(str);
+                str.Replace("\n","");
+                Console.WriteLine("Stranger wrote:" + str);
                 //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
-                Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
+                //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
                 input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
              }
         }
@@ -94,8 +106,8 @@ namespace TermProjectC
     class Client
     {
         private static IPAddress inp_ip;
-        TcpClient client;
-        int port;
+        private static TcpClient client;
+        private static int port;
         public Client(IPAddress ip, int por)
         {
             inp_ip = ip;
@@ -109,7 +121,6 @@ namespace TermProjectC
         }
         public void SendMessage(string text)
         {
-            client.Connect(inp_ip, port);
             byte[] buffer = new byte[1024];
             buffer = Encoding.ASCII.GetBytes(text);
             client.GetStream().Write(buffer, 0, buffer.Length);
@@ -117,6 +128,18 @@ namespace TermProjectC
         public void Connect(IPAddress ip)
         {
             inp_ip = ip;
+            while (!client.Connected)
+            {
+                try
+                {
+                    client.Connect(inp_ip, port);
+                    Console.WriteLine("Connection Attempt succeeded");
+                }
+                catch
+                {
+                    Console.WriteLine("Connection Attempt failed");
+                }
+            }
         }
     }
 }
