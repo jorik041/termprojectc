@@ -3,3 +3,4 @@ C:\Users\Миша\Desktop\TermProjectC\TermProjectC\TermProjectC\bin\Debug\TermP
 C:\Users\Миша\Desktop\TermProjectC\TermProjectC\TermProjectC\bin\Debug\TermProjectC.pdb
 C:\Users\Миша\Desktop\TermProjectC\TermProjectC\TermProjectC\obj\Debug\TermProjectC.exe
 C:\Users\Миша\Desktop\TermProjectC\TermProjectC\TermProjectC\obj\Debug\TermProjectC.pdb
+C:\Users\Миша\Desktop\TermProjectC\TermProjectC\TermProjectC\obj\Debug\TermProjectC.csprojResolveAssemblyReference.cache
