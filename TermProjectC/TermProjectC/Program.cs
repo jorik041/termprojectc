@@ -20,7 +20,21 @@ namespace TermProjectC
             int inp_port = Convert.ToInt32(Console.ReadLine());
             int out_port = Convert.ToInt32(Console.ReadLine());
             Server serv = null;
-            serv = new Server(inp_port);        
+            while (serv == null)
+            {
+                try
+                {
+                    serv = new Server(inp_port);
+                }
+                catch
+                {
+                    serv = null;
+                    Console.WriteLine("Input Port is invalid. Enter new inp_port: ");
+                    inp_port = Convert.ToInt32(Console.ReadLine());
+                    Console.WriteLine("Input Port is invalid. Enter new out_port: ");
+                    out_port = Convert.ToInt32(Console.ReadLine());
+                }
+            }
             Thread Thread = new Thread(new ThreadStart(serv.HandlingWithoutClosing));
             Thread.Start();
             Client client;
@@ -35,9 +49,15 @@ namespace TermProjectC
             }
             while (true)
             {
-                client.SendMessage(Console.ReadLine());
-                string debug = serv.Debug();
+                Console.ForegroundColor = ConsoleColor.Red;
+                Thread.Sleep(4);
+                Console.Write("You: ");
+                Console.ForegroundColor = ConsoleColor.White;
+                string answer = Console.ReadLine();
+                client.SendMessage(answer);
             }
+            Thread.Abort();
+            return;
         }
     }
     class Server
@@ -53,6 +73,7 @@ namespace TermProjectC
         public Server(int port)
         {
             listener = new TcpListener(IPAddress.Any, port);
+            listener.Start();
             client = new TcpClient();
             buffer = new byte [1024];
             str = "";
@@ -77,29 +98,41 @@ namespace TermProjectC
         }
         public void HandlingWithoutClosing()
         {
-             listener.Start();
+             //listener.Start();
              //client = listener.AcceptTcpClient();
              while (!listener.Pending());
              Console.WriteLine("Connection set up");
              client = listener.AcceptTcpClient();
              while (true)
-             {               
-                client.GetStream().Read(buffer, 0, 1024);
+             {
+                 try
+                 {
+                     client.GetStream().Read(buffer, 0, 1024);
+                     input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+                 }
+                 catch
+                 {
+                     Console.WriteLine("Connection Lost\n");
+                     Thread.Sleep(1000);
+                 }
                 str = Encoding.UTF32.GetString(buffer);
                 //Console.WriteLine("Stranger wrote:" + str);
-                Console.Write("Stranger wrote:");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("\nStranger wrote:");
+                Console.ForegroundColor = ConsoleColor.White;
                 int i = 0;
                  while (str[i] != '\0')
                  {
                     Console.Write(str[i++]);
                  }
-                 Console.Write("\n You Wrote: ");
-                     str = "";
-                client.GetStream().Flush();
+                 Console.ForegroundColor = ConsoleColor.Red;
+                 Console.Write("\nYou:");
+                 str = "";
                 buffer = new byte [1024];
                 //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
                 //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
-                input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+                
+                
              }
         }
         
@@ -150,6 +183,10 @@ namespace TermProjectC
                     Console.WriteLine("Connection Attempt failed");
                 }
             }
+        }
+        ~Client()
+        {
+            client.Close();
         }
     }
 }
