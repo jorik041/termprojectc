@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.Threading;
-
+using System.Collections.Generic;
 
 
 namespace TermProjectC
@@ -35,7 +35,7 @@ namespace TermProjectC
                     out_port = Convert.ToInt32(Console.ReadLine());
                 }
             }
-            Thread Thread = new Thread(new ThreadStart(serv.HandlingWithoutClosing));
+            Thread Thread = new Thread(new ThreadStart(serv.Handling));
             Thread.Start();
             Client client;
             if (serv.GetIp() != null)
@@ -68,37 +68,50 @@ namespace TermProjectC
         public IPAddress GetIp() { return input_ip; }
         private static byte[] buffer;
         private static string str;
+        private static Dictionary<IPAddress, string> nicknames_dict;
         public TcpClient GetClient() { return client; }
         public string Debug() { return str; }
         public Server(int port)
         {
             listener = new TcpListener(IPAddress.Any, port);
-            listener.Start();
+            
             client = new TcpClient();
             buffer = new byte [1024];
             str = "";
+            nicknames_dict = new System.Collections.Generic.Dictionary<IPAddress, string>();
            
         }
         public void Handling()
-        {            
+        {
+            listener.Start();
             while (true)
-            {
-                listener.Start();
+            {                
+                //while (!listener.Pending());
                 client = listener.AcceptTcpClient();
                 client.GetStream().Read(buffer, 0, 1024);
                 str = Encoding.UTF32.GetString(buffer);
-                Console.WriteLine("Stranger Wrote:");
-                Console.WriteLine(str);
-                //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
-                //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
-                input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("\n({0}:{1})Stranger wrote:",((IPEndPoint)client.Client.RemoteEndPoint).Address,((IPEndPoint)client.Client.RemoteEndPoint).Port);
+                Console.ForegroundColor = ConsoleColor.White;
+                int i = 0;
+                while (str[i] != '\0')
+                {
+                    Console.Write(str[i++]);
+                }
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("\nYou:");
+                Console.ForegroundColor = ConsoleColor.White;
+                str = "";
+                buffer = new byte[1024];
+                client.GetStream().Dispose();
                 client.Close();
-                listener.Stop();
+                client = new TcpClient();
+               
             }
         }
         public void HandlingWithoutClosing()
         {
-             //listener.Start();
+             listener.Start();
              //client = listener.AcceptTcpClient();
              while (!listener.Pending());
              Console.WriteLine("Connection set up");
@@ -127,6 +140,7 @@ namespace TermProjectC
                  }
                  Console.ForegroundColor = ConsoleColor.Red;
                  Console.Write("\nYou:");
+                 Console.ForegroundColor = ConsoleColor.White;
                  str = "";
                 buffer = new byte [1024];
                 //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
@@ -135,7 +149,12 @@ namespace TermProjectC
                 
              }
         }
-        
+        protected void NewUserEnter()
+        {
+            buffer = Encoding.UTF32.GetBytes("Enter your nickname \0");
+            client.GetStream().Write(buffer, 0, buffer.Length);
+            client.GetStream().Read(buffer, 0, 1024);
+        }
         ~Server()
         {
             if (listener != null)
@@ -163,20 +182,26 @@ namespace TermProjectC
         }
         public void SendMessage(string text)
         {
+            Connect(inp_ip);
+            //client.Connect(inp_ip, port);
             byte[] buffer = new byte[1024];
             text += '\0';
             buffer = Encoding.UTF32.GetBytes(text);
             client.GetStream().Write(buffer, 0, buffer.Length);
+            client.GetStream().Dispose();
+            client.Close();
+            client = new TcpClient();
         }
         public void Connect(IPAddress ip)
         {
             inp_ip = ip;
-            while (!client.Connected)
+           // client.Connect(inp_ip, port);
+           while (!client.Connected)
             {
                 try
                 {
                     client.Connect(inp_ip, port);
-                    Console.WriteLine("Connection Attempt succeeded");
+                    //Console.WriteLine("Connection Attempt succeeded");
                 }
                 catch
                 {
