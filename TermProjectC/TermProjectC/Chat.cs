@@ -66,6 +66,7 @@ namespace TermProjectC
             server_thread.Start();
             while (true)
             {
+                Console.WriteLine(serv.GetString());
                 SendMessage();
             }
         }
