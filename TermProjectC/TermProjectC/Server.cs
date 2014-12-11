@@ -31,6 +31,30 @@ namespace TermProjectC
             nicknames_dict = new System.Collections.Generic.Dictionary<IPAddress, string>();
 
         }
+
+        protected string WriteBufferToString()
+        {
+            string answer = Encoding.UTF32.GetString(buffer);            
+            for (int i = 0; i < answer.Length; i++ )
+            {
+                if (answer[i] != '\0')
+                {
+                    str += answer[i];
+                }
+
+            }
+            buffer = new byte[1024];
+            return answer;            
+        }
+
+
+        public string GetString()
+        {
+            string answer = str;
+            str = "";
+            return answer;
+        }
+
         public void Handling()
         {
            // listener.Start();
@@ -39,67 +63,42 @@ namespace TermProjectC
                 //while (!listener.Pending());
                 client = listener.AcceptTcpClient();
                 client.GetStream().Read(buffer, 0, 1024);
-                str = Encoding.UTF32.GetString(buffer);
-                Console.ForegroundColor = ConsoleColor.Red;
-                input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
-                Console.Write("\n({0}:{1})Stranger wrote:",input_ip,((IPEndPoint)client.Client.RemoteEndPoint).Port);
-                Console.ForegroundColor = ConsoleColor.White;
-                int i = 0;  
-                while (str[i] != '\0')
+                WriteBufferToString();
+                IPAddress inp_ip = (((IPEndPoint)client.Client.RemoteEndPoint).Address);
+                if (!nicknames_dict.ContainsKey(inp_ip))
                 {
-                    Console.Write(str[i++]);
+                    NewUserEnter(inp_ip);
                 }
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("\nYou:");
-                Console.ForegroundColor = ConsoleColor.White;
-                str = "";
-                buffer = new byte[1024];
                 client.GetStream().Dispose();
                 client.Close();
                 client = new TcpClient();
                
             }
         }
-        public void HandlingWithoutClosing()
+
+        protected void NewUserEnter(IPAddress inp_ip)
         {
-            listener.Start();
-            //client = listener.AcceptTcpClient();
-            while (!listener.Pending()) ;
-            Console.WriteLine("Connection set up");
-            client = listener.AcceptTcpClient();
-            while (true)
-            {
-                try
-                {
-                    client.GetStream().Read(buffer, 0, 1024);
-                    input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
-                }
-                catch
-                {
-                    Console.WriteLine("Connection Lost\n");
-                    Thread.Sleep(1000);
-                }
-                str = Encoding.UTF32.GetString(buffer);
-                //Console.WriteLine("Stranger wrote:" + str);
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("\nStranger wrote:");
-                Console.ForegroundColor = ConsoleColor.White;
-                int i = 0;
-                while (str[i] != '\0')
-                {
-                    Console.Write(str[i++]);
-                }
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("\nYou:");
-                Console.ForegroundColor = ConsoleColor.White;
-                str = "";
-                buffer = new byte[1024];
-                //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
-                //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
-
-
-            }
+            
+            int port = (((IPEndPoint)client.Client.RemoteEndPoint).Port);
+            string data = "Enter your nickname \0";
+            byte[] buffer = Encoding.UTF32.GetBytes(data);
+            client.GetStream().Dispose();
+            client.Close();
+            client = new TcpClient();
+            client.Connect(inp_ip,port);
+            client.GetStream().Write(buffer,0,buffer.Length);
+            client.GetStream().Dispose();
+            client.Close();
+            buffer = new byte [1024];
+            client = new TcpClient();
+            client.Connect(inp_ip,port);
+            client.GetStream().Read(buffer,0,buffer.Length);
+            client.GetStream().Dispose();
+            client.Close();
+            data = Encoding.UTF32.GetString(buffer);
+            nicknames_dict.Add(inp_ip, data);
         }
+
         ~Server()
         {
             if (listener != null)
