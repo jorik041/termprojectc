@@ -14,12 +14,20 @@ namespace TermProjectC
 {
     class Program
     {
-        IPAddress input_ip;
+        IPAddress input_ip = IPAddress.Parse("127.0.0.1");
         static void Main(string[] args)
         {
-            int inp_port = Convert.ToInt32(Console.ReadLine());
-            int out_port = Convert.ToInt32(Console.ReadLine());
+            Console.WriteLine("Enter input_port (Press enter to use default)");
+            string user_input = Console.ReadLine();
+            int inp_port = 8080,
+                out_port = 8081;
             Server serv = null;
+            if (user_input != "")
+            {
+                inp_port = Convert.ToInt32(user_input);
+                Console.WriteLine("Enter output_port");
+                out_port = Convert.ToInt32(Console.ReadLine());
+            }
             while (serv == null)
             {
                 try
@@ -29,9 +37,9 @@ namespace TermProjectC
                 catch
                 {
                     serv = null;
-                    Console.WriteLine("Input Port is invalid. Enter new inp_port: ");
+                    Console.WriteLine("A mistake has been caught. Probably, Input Port is invalid so you should enter new input and output ports. Enter new inp_port: ");
                     inp_port = Convert.ToInt32(Console.ReadLine());
-                    Console.WriteLine("Input Port is invalid. Enter new out_port: ");
+                    Console.WriteLine("Enter new out_port: ");
                     out_port = Convert.ToInt32(Console.ReadLine());
                 }
             }
@@ -45,7 +53,6 @@ namespace TermProjectC
             else
             {
                 client = new Client(out_port);
-                client.Connect(IPAddress.Loopback);
             }
             while (true)
             {
@@ -54,6 +61,10 @@ namespace TermProjectC
                 Console.Write("You: ");
                 Console.ForegroundColor = ConsoleColor.White;
                 string answer = Console.ReadLine();
+                if (answer == "::quit")
+                {
+                    break;
+                }
                 client.SendMessage(answer);
             }
             Thread.Abort();
@@ -70,20 +81,21 @@ namespace TermProjectC
         private static string str;
         private static Dictionary<IPAddress, string> nicknames_dict;
         public TcpClient GetClient() { return client; }
-        public string Debug() { return str; }
+       
         public Server(int port)
         {
+            listener = null;
             listener = new TcpListener(IPAddress.Any, port);
-            
+            listener.Start();
             client = new TcpClient();
             buffer = new byte [1024];
             str = "";
-            nicknames_dict = new System.Collections.Generic.Dictionary<IPAddress, string>();
+            nicknames_dict = new System.Collections.Generic.Dictionary<IPAddress, string>();   
            
         }
         public void Handling()
         {
-            listener.Start();
+           // listener.Start();
             while (true)
             {                
                 //while (!listener.Pending());
@@ -141,7 +153,7 @@ namespace TermProjectC
                  Console.ForegroundColor = ConsoleColor.Red;
                  Console.Write("\nYou:");
                  Console.ForegroundColor = ConsoleColor.White;
-                 str = "";
+                str = "";
                 buffer = new byte [1024];
                 //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
                 //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
@@ -179,7 +191,9 @@ namespace TermProjectC
         {
             client = new TcpClient();
             port = por;
+            inp_ip = IPAddress.Loopback;
         }
+        
         public void SendMessage(string text)
         {
             Connect(inp_ip);
