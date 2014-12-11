@@ -7,7 +7,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.Threading;
-using System.Collections.Generic;
 
 
 namespace TermProjectC
@@ -17,7 +16,7 @@ namespace TermProjectC
         IPAddress input_ip = IPAddress.Parse("127.0.0.1");
         static void Main(string[] args)
         {
-            Console.WriteLine("Enter input_port (Press enter to use default)");
+            /*Console.WriteLine("Enter input_port (Press enter to use default)");
             string user_input = Console.ReadLine();
             int inp_port = 8080,
                 out_port = 8081;
@@ -69,163 +68,10 @@ namespace TermProjectC
             }
             Thread.Abort();
             return;
+             */
+            Chat chat = new Chat();
+            chat.PrimaryHandling();
         }
     }
-    class Server
-    {
-        private static TcpListener listener;
-        private static TcpClient client;
-        private static IPAddress input_ip;
-        public IPAddress GetIp() { return input_ip; }
-        private static byte[] buffer;
-        private static string str;
-        private static Dictionary<IPAddress, string> nicknames_dict;
-        public TcpClient GetClient() { return client; }
-       
-        public Server(int port)
-        {
-            listener = null;
-            listener = new TcpListener(IPAddress.Any, port);
-            listener.Start();
-            client = new TcpClient();
-            buffer = new byte [1024];
-            str = "";
-            nicknames_dict = new System.Collections.Generic.Dictionary<IPAddress, string>();   
-           
-        }
-        public void Handling()
-        {
-           // listener.Start();
-            while (true)
-            {                
-                //while (!listener.Pending());
-                client = listener.AcceptTcpClient();
-                client.GetStream().Read(buffer, 0, 1024);
-                str = Encoding.UTF32.GetString(buffer);
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("\n({0}:{1})Stranger wrote:",((IPEndPoint)client.Client.RemoteEndPoint).Address,((IPEndPoint)client.Client.RemoteEndPoint).Port);
-                Console.ForegroundColor = ConsoleColor.White;
-                int i = 0;
-                while (str[i] != '\0')
-                {
-                    Console.Write(str[i++]);
-                }
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("\nYou:");
-                Console.ForegroundColor = ConsoleColor.White;
-                str = "";
-                buffer = new byte[1024];
-                client.GetStream().Dispose();
-                client.Close();
-                client = new TcpClient();
-               
-            }
-        }
-        public void HandlingWithoutClosing()
-        {
-             listener.Start();
-             //client = listener.AcceptTcpClient();
-             while (!listener.Pending());
-             Console.WriteLine("Connection set up");
-             client = listener.AcceptTcpClient();
-             while (true)
-             {
-                 try
-                 {
-                     client.GetStream().Read(buffer, 0, 1024);
-                     input_ip = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
-                 }
-                 catch
-                 {
-                     Console.WriteLine("Connection Lost\n");
-                     Thread.Sleep(1000);
-                 }
-                str = Encoding.UTF32.GetString(buffer);
-                //Console.WriteLine("Stranger wrote:" + str);
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("\nStranger wrote:");
-                Console.ForegroundColor = ConsoleColor.White;
-                int i = 0;
-                 while (str[i] != '\0')
-                 {
-                    Console.Write(str[i++]);
-                 }
-                 Console.ForegroundColor = ConsoleColor.Red;
-                 Console.Write("\nYou:");
-                 Console.ForegroundColor = ConsoleColor.White;
-                str = "";
-                buffer = new byte [1024];
-                //Console.WriteLine("Client connected with IP {0}", client.Client.AddressFamily.);
-                //Console.WriteLine(((IPEndPoint)client.Client.RemoteEndPoint).Address.ToString());
-                
-                
-             }
-        }
-        protected void NewUserEnter()
-        {
-            buffer = Encoding.UTF32.GetBytes("Enter your nickname \0");
-            client.GetStream().Write(buffer, 0, buffer.Length);
-            client.GetStream().Read(buffer, 0, 1024);
-        }
-        ~Server()
-        {
-            if (listener != null)
-            {
-                listener.Stop();
-            }
-        }
-
-    }
-    class Client
-    {
-        private static IPAddress inp_ip;
-        private static TcpClient client;
-        private static int port;
-        public Client(IPAddress ip, int por)
-        {
-            inp_ip = ip;
-            client = new TcpClient();
-            port = por;
-        }
-        public Client(int por)
-        {
-            client = new TcpClient();
-            port = por;
-            inp_ip = IPAddress.Loopback;
-        }
-        
-        public void SendMessage(string text)
-        {
-            Connect(inp_ip);
-            //client.Connect(inp_ip, port);
-            byte[] buffer = new byte[1024];
-            text += '\0';
-            buffer = Encoding.UTF32.GetBytes(text);
-            client.GetStream().Write(buffer, 0, buffer.Length);
-            client.GetStream().Dispose();
-            client.Close();
-            client = new TcpClient();
-        }
-        public void Connect(IPAddress ip)
-        {
-            inp_ip = ip;
-           // client.Connect(inp_ip, port);
-           while (!client.Connected)
-            {
-                try
-                {
-                    client.Connect(inp_ip, port);
-                    //Console.WriteLine("Connection Attempt succeeded");
-                }
-                catch
-                {
-                    Console.WriteLine("Connection Attempt failed");
-                }
-            }
-        }
-        ~Client()
-        {
-            client.Close();
-        }
-    }
+    
 }
