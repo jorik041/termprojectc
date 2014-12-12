@@ -1,0 +1,6 @@
+c:\users\миша\documents\visual studio 2012\Projects\UDPChat\UDPChat\bin\Debug\UDPChat.exe.config
+c:\users\миша\documents\visual studio 2012\Projects\UDPChat\UDPChat\obj\Debug\UDPChat.csprojResolveAssemblyReference.cache
+c:\users\миша\documents\visual studio 2012\Projects\UDPChat\UDPChat\bin\Debug\UDPChat.exe
+c:\users\миша\documents\visual studio 2012\Projects\UDPChat\UDPChat\bin\Debug\UDPChat.pdb
+c:\users\миша\documents\visual studio 2012\Projects\UDPChat\UDPChat\obj\Debug\UDPChat.exe
+c:\users\миша\documents\visual studio 2012\Projects\UDPChat\UDPChat\obj\Debug\UDPChat.pdb
