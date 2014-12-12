@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,8 +11,9 @@ namespace UDPChat
     {
         static void Main(string[] args)
         {
-            Chat chat = new Chat();
-            string decision = Console.ReadLine();
+			Console.Write ("Enter ur nick: ");
+            Chat chat = new Chat(Console.ReadLine ());
+            // string decision = Console.ReadLine();
             Thread ListenThread = new Thread(new ThreadStart(chat.Listen));
             ListenThread.Start();
             while (true)
