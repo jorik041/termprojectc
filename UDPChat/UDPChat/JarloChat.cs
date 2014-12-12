@@ -10,15 +10,30 @@ namespace JarlooChat
 {
     class Chat
     {
-        private static string user_last_message;
 		private readonly string username;
+
+		public const char separator = (char)0x2; // Start Of Text
+		public const char messageHead = (char)0x10;
+		public const char firstMeetHead = (char)0x11;
+		public const char passwordHead = (char)0x12;
 
 		public Chat (string nameOfUser)
 		{
 			username = nameOfUser;
 		}
 
-        public void Send(string data)
+		public void digest (string data)
+		{
+			char head = data [0];
+			int separatorIndex = data.IndexOf (separator);
+			string tech_data = data.Substring (1, separatorIndex - 1);
+			string use_data = data.Substring (separatorIndex + 1);
+
+			Console.WriteLine ("tech_data: " + tech_data);
+			Console.WriteLine ("use_data: " + use_data);
+		}
+
+        public void Send (string data, char head = messageHead)
         {
             UdpClient udpclient = new UdpClient();
 
@@ -26,18 +41,14 @@ namespace JarlooChat
             udpclient.JoinMulticastGroup(multicastaddress);
             IPEndPoint remoteep = new IPEndPoint(multicastaddress, 2222);
 
-            Byte[] buffer = null;
-            Byte[] tech_buffer = null;
-            
-            string tech_data = username;
-            
-            buffer = Encoding.Unicode.GetBytes(data);
-            tech_buffer = Encoding.Unicode.GetBytes(tech_data);
+			string tech_data = "";
 
-            udpclient.Send(tech_buffer, tech_buffer.Length, remoteep);
+			if (head == messageHead)
+				tech_data = username;
+
+			Byte[] buffer = Encoding.Unicode.GetBytes(head + tech_data + separator + data);
+
             udpclient.Send(buffer, buffer.Length, remoteep);
-            
-            user_last_message = data;
         }
 
         public void Listen()
@@ -59,15 +70,10 @@ namespace JarlooChat
 
             while (true)
             {
-                Byte[] tech_data = client.Receive(ref localEp);
-                string string_tech_data = Encoding.Unicode.GetString(tech_data);
                 Byte[] data = client.Receive(ref localEp);
                 string strData = Encoding.Unicode.GetString(data);
-                if (strData != user_last_message)
-                {
-                    Console.Write("{0}: ", string_tech_data);
-                    Console.WriteLine(strData);
-                }
+
+				digest (strData);
             }
         }
     }
