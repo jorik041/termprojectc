@@ -2,8 +2,8 @@
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.Workbench ActiveDocument="JarloChat.cs">
     <Files>
-      <File FileName="Program.cs" Line="10" Column="18" />
-      <File FileName="JarloChat.cs" Line="42" Column="9" />
+      <File FileName="Program.cs" Line="8" Column="18" />
+      <File FileName="JarloChat.cs" Line="72" Column="28" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
