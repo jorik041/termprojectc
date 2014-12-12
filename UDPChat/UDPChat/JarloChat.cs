@@ -27,7 +27,7 @@ namespace JarlooChat
             Byte[] buffer = null;
             Byte[] tech_buffer = null;
             
-            string tech_data = "Username";
+            string tech_data = "";
             
             buffer = Encoding.Unicode.GetBytes(data);
             tech_buffer = Encoding.Unicode.GetBytes(tech_data);
@@ -66,7 +66,7 @@ namespace JarlooChat
 
                 if (str_data != user_last_message)
                 {
-                    Console.Write("{0}Anonymous: ", str_tech_data);
+                    Console.Write("{0}: ", str_tech_data);
                     Console.WriteLine(str_data);
                 }
             }
