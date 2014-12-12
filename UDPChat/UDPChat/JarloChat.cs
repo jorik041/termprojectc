@@ -13,11 +13,13 @@ namespace JarlooChat
 {
     class Chat
     {
+        protected static void ParseTechData(byte [] tech_data)
+        {
+        }
         private static string user_last_message;
         public void Send(string data)
         {
             UdpClient udpclient = new UdpClient();
-
             IPAddress multicastaddress = IPAddress.Parse("239.0.0.222");
             udpclient.JoinMulticastGroup(multicastaddress);
             IPEndPoint remoteep = new IPEndPoint(multicastaddress, 2222);
@@ -57,13 +59,15 @@ namespace JarlooChat
             while (true)
             {
                 Byte[] tech_data = client.Receive(ref localEp);
-                string string_tech_data = Encoding.Unicode.GetString(tech_data);
                 Byte[] data = client.Receive(ref localEp);
-                string strData = Encoding.Unicode.GetString(data);
-                if (strData != user_last_message)
+
+                string str_tech_data = Encoding.Unicode.GetString(tech_data);                
+                string str_data = Encoding.Unicode.GetString(data);
+
+                if (str_data != user_last_message)
                 {
-                    Console.Write("{0}Anonymous: ", string_tech_data);
-                    Console.WriteLine(strData);
+                    Console.Write("{0}Anonymous: ", str_tech_data);
+                    Console.WriteLine(str_data);
                 }
             }
         }

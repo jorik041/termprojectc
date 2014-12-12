@@ -13,7 +13,6 @@ namespace UDPChat
         static void Main(string[] args)
         {
             Chat chat = new Chat();
-            string decision = Console.ReadLine();
             Thread ListenThread = new Thread(new ThreadStart(chat.Listen));
             ListenThread.Start();
             while (true)
