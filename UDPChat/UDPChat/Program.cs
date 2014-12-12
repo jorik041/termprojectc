@@ -11,7 +11,7 @@ namespace UDPChat
     {
         static void Main(string[] args)
         {
-			Console.Write ("Enter ur nick: ");
+			Console.Write ("nick: ");
             Chat chat = new Chat(Console.ReadLine ());
             // string decision = Console.ReadLine();
             Thread ListenThread = new Thread(new ThreadStart(chat.Listen));
