@@ -1,4 +1,4 @@
-### **C# # RSA # AES Protected chat** ###
+### **C# ### # RSA # ### AES Protected chat** ###
 
 All the current non-stable sources are availible in "mikhail" branch. They should also be availible in "alexey" branch when it would be created. There are also *.exe files in the debug folder to download and run current version without any compiling. 
 
