@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 using System.Security.Cryptography;
 
@@ -9,53 +10,41 @@ using System.Net.Sockets;
 
 namespace JarlooChat
 {
-    class Chat
-    {
+	class Chat
+	{
 		private readonly string username;
 		private bool firstMeet;
-
-		private List<string> WaitForConnect;
 
 		public const char separator = (char)0x2; // Start Of Text
 
 		public const char dissconnectHead = (char)0x4; // EOT - End Of Transmition
-		public const char messageHead = (char)0x10;
-		public const char firstMeetHead = (char)0x11;
-		public const char passwordHead = (char)0x12;
+		public const char messageHead = (char)0x7;
+
+		public const char publicKeyHead = (char)0x11;
+		public const char secretKeyHead = (char)0x12;
+		public const char newKeyHead = (char)0x13;
+
 
 		public Chat (string nameOfUser)
 		{
+			Random rnd = new Random (1);
 			username = nameOfUser;
-
-			WaitForConnect = new List<string> ();
+			firstMeet = true;
 
 			rsa = new RSACryptoServiceProvider ();
 			des = new DESCryptoServiceProvider ();
+			rnd.NextBytes(des.Key);
+			des.IV = des.Key;
 
-			des.GenerateKey (); des.GenerateIV ();
-
-			cryptor = des.CreateEncryptor ();
-			decryptor = des.CreateDecryptor ();
-
-			firstMeet = true;
-
-			byte[] keyToTransport = rsa.ExportParameters (false).Modulus;
-
-			byte[] buffer = {0};
-			Array.Resize (ref buffer, keyToTransport.Length);
-			Array.Copy (keyToTransport, buffer, keyToTransport.Length);
-
-			Send (buffer, firstMeetHead);
+			Send (Encoding.Unicode.GetString(rsa.ExportParameters(false).Modulus), publicKeyHead, false);
 		}
 
 		~Chat()
 		{
-			Send("", dissconnectHead);
-			rsa.Clear ();
-			des.Clear ();
+			Send("", dissconnectHead, false);
 		}
 
-		private char digest (string data)
+		public void digest (string data)
 		{
 			char head = data [0];
 			int separatorIndex = data.IndexOf (separator);
@@ -65,108 +54,107 @@ namespace JarlooChat
 			if (nickname != username) {
 				switch (head) {
 				case messageHead:
-					Console.WriteLine ("\tmsg from " + nickname);
-					use_data = decrypt (use_data);
+					try
+					{
+					string text = Encoding.Unicode.GetString(decryptor.TransformFinalBlock (Encoding.Unicode.GetBytes (use_data), 0, use_data.Length));
+					}
+					catch (Exception e) {
+					}
 					Console.WriteLine (nickname + ": " + use_data);
-
 					break;
-			
-				case firstMeetHead:
-					Console.WriteLine ("\tfirst meet " + nickname);
-					WaitForConnect.Add (nickname);
+
+				case publicKeyHead:
+					firstMeet = false;
 
 					RSAParameters keyInfo = new RSAParameters ();
-					RSACryptoServiceProvider rsa_toCopy = new RSACryptoServiceProvider ();
-					byte[] publicKey = Encoding.ASCII.GetBytes (use_data);
-					byte[] publicExp = {1,0,1};
-
+					RSACryptoServiceProvider copy = new RSACryptoServiceProvider ();
+					byte[] publicKey = Encoding.Unicode.GetBytes (use_data);
+					byte[] publicExp = {17};
 					keyInfo.Modulus = publicKey;
 					keyInfo.Exponent = publicExp;
-					rsa_toCopy.ImportParameters (keyInfo);
+					copy.ImportParameters(keyInfo);
+					rsa = copy;
 
-					rsa = rsa_toCopy;
+					byte[] secretKey = rsa.Encrypt(des.Key, false);
 
-					byte[] key = rsa.Encrypt (des.Key, false);
-					byte[] iv = rsa.Encrypt (des.IV, false);
-
-					byte[] buffer = {0}; // быдлокод
-					Array.Resize (ref buffer, key.Length + iv.Length);
-					Array.Copy (key, buffer, key.Length);
-					Array.Copy (iv, 0, buffer, key.Length, iv.Length);
-						
-					Send (Encoding.ASCII.GetString(buffer), passwordHead);
+					Send(Encoding.Unicode.GetString(secretKey), secretKeyHead, false);
 					break;
-			
-				case passwordHead:
-					Console.WriteLine ("\tpassword from " + nickname);
 
-					byte[] buff = Encoding.ASCII.GetBytes(decrypt(use_data));
+				case secretKeyHead:
+					if(firstMeet == true) {
+						byte[] keys = rsa.Decrypt(Encoding.Unicode.GetBytes (use_data), false);
 
-					byte[] inputKey = {0}; Array.Resize(ref inputKey, des.KeySize);
-					byte[] inputIv = {0}; Array.Resize(ref inputIv, des.KeySize);
-
-					for(int i = 0; i < des.KeySize; i++)
-						inputKey[i] = buff[i];
-					for(int i = 0; i < des.KeySize; i++)
-						inputIv[i] = buff[i + des.KeySize];
-
-					if (firstMeet == true)
-					{
-						des.Key = xor(des.Key, inputKey);
-						des.IV = xor(des.IV, inputIv);
-
-						for(int i = 0; i < des.KeySize; i++)
-							buff[i] = des.Key[i];
-						for(int i = 0; i < des.KeySize; i++)
-							buff[i + des.KeySize] = des.IV[i];
-
-						Send(Encoding.ASCII.GetString(buff), passwordHead);
+						des.Key = xor(des.Key, keys);
+						des.IV = des.Key;
+						cryptor = des.CreateEncryptor();
+						decryptor = des.CreateDecryptor();
 
 						firstMeet = false;
-					}
 
-					if (WaitForConnect.Contains(nickname))
-					{
-						des.Key = inputKey;
-						des.IV = inputIv;
+						byte[] newKey = rsa.Encrypt(des.Key, false);
 
-						for(int i = 0; i < des.KeySize; i++)
-							buff[i] = des.Key[i];
-						for(int i = 0; i < des.KeySize; i++)
-							buff[i + des.KeySize] = des.IV[i];
-
-						WaitForConnect.Remove(nickname);
+						Send(Encoding.Unicode.GetString(newKey), newKeyHead, false);
 					}
 					break;
-			
+
+				case newKeyHead:
+					try{
+					byte[] rsa_key1 = new byte[1024]; Array.Resize(ref rsa_key1, rsa.KeySize);
+					byte[] des_key1 = new byte[1024]; Array.Resize(ref des_key1, rsa.KeySize);
+
+					RSAParameters keyInfo1 = new RSAParameters (); //
+					RSACryptoServiceProvider copy1 = new RSACryptoServiceProvider ();
+					RSACryptoServiceProvider rsa1 = new RSACryptoServiceProvider ();
+					byte[] publicKey1 = Encoding.Unicode.GetBytes (use_data);
+					byte[] publicExp1 = {17};
+					keyInfo.Modulus = publicKey1;
+					keyInfo.Exponent = publicExp1;
+					rsa1 = copy1;
+
+					byte[] key = rsa.Decrypt(Encoding.Unicode.GetBytes (use_data), false);
+					des.Key = key;
+					Console.WriteLine(Encoding.Unicode.GetString (des.Key));
+					des.IV = des.Key;
+					}
+					catch (Exception e)
+					{}
+					break;
+
 				case dissconnectHead:
 					Console.WriteLine ("\t" + nickname + " left chat");
 					break;
-			
+
 				default:
-					throw new InvalidOperationException();
+					throw new InvalidOperationException ();
 				}
 			}
-
-			return head;
 		}
 
-        public void Send (string data, char head = messageHead) // Использует шифрование
-        {
-            UdpClient udpclient = new UdpClient();
+		public void Send (string data, char head = messageHead, bool encryption = true)
+		{
+			Byte[] Buffer = {};
+			UdpClient udpclient = new UdpClient();
 
-            IPAddress multicastaddress = IPAddress.Parse("239.0.0.222");
-            udpclient.JoinMulticastGroup(multicastaddress);
-            IPEndPoint remoteep = new IPEndPoint(multicastaddress, 2222);
+			IPAddress multicastaddress = IPAddress.Parse("239.0.0.222");
+			udpclient.JoinMulticastGroup(multicastaddress);
+			IPEndPoint remoteep = new IPEndPoint(multicastaddress, 2222);
 
-			data = Encoding.ASCII.GetString (crypt (data)); // быдлокод
+			Byte[] buffer = Encoding.Unicode.GetBytes(head + username + separator + data);
 
-			Byte[] buffer = Encoding.ASCII.GetBytes(head + username + separator + data);
+			if (encryption == true) {
+				try
+				{
+					Buffer = cryptor.TransformFinalBlock (buffer, 0, buffer.Length);
+				}
+				catch (Exception e)
+				{
+				}
+				}
 
-            udpclient.Send(buffer, buffer.Length, remoteep);
-        }
-
-		public void Send (byte[] data, char head = firstMeetHead) // Не использует шифрование
+			udpclient.Send(buffer, buffer.Length, remoteep);
+		}
+		/*
+		public void Send (byte[] data, char head = messageHead, bool encryption = true)
 		{
 			UdpClient udpclient = new UdpClient();
 
@@ -181,66 +169,39 @@ namespace JarlooChat
 
 			Array.Copy (data, 0, buffer, oldSize, data.Length);
 
-			udpclient.Send(buffer, buffer.Length, remoteep);
-		}
+			udpclient.Send(Encoding.Unicode.GetString(buffer), buffer.Length, remoteep);
+		}*/
 
-        public void Listen()
-        {
-            UdpClient client = new UdpClient();
+		public void Listen()
+		{
+			UdpClient client = new UdpClient();
 
-            client.ExclusiveAddressUse = false;
-            IPEndPoint localEp = new IPEndPoint(IPAddress.Any, 2222);
+			client.ExclusiveAddressUse = false;
+			IPEndPoint localEp = new IPEndPoint(IPAddress.Any, 2222);
 
-            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            client.ExclusiveAddressUse = false;
+			client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+			client.ExclusiveAddressUse = false;
 
-            client.Client.Bind(localEp);
-            
-            IPAddress multicastaddress = IPAddress.Parse("239.0.0.222");
-            client.JoinMulticastGroup(multicastaddress);
+			client.Client.Bind(localEp);
 
-            Console.WriteLine("\tListening this will never quit so you will need to ctrl-c it");
+			IPAddress multicastaddress = IPAddress.Parse("239.0.0.222");
+			client.JoinMulticastGroup(multicastaddress);
 
-            while (true)
-            {
-                Byte[] data = client.Receive(ref localEp);
-				string strData = Encoding.ASCII.GetString(data);
+			Console.WriteLine("\tListening this will never quit so you will need to ctrl-c it");
+
+			while (true)
+			{
+				Byte[] data = client.Receive(ref localEp);
+				string strData = Encoding.Unicode.GetString(data);
 
 				digest (strData);
-            }
-        }
-
-		private RSACryptoServiceProvider rsa;
-		private DESCryptoServiceProvider des;
-		private ICryptoTransform cryptor;
-		private ICryptoTransform decryptor;
-
-		private byte[] crypt (string data)
-		{
-			byte[] buffer = Encoding.ASCII.GetBytes (data);
-
-			return cryptor.TransformFinalBlock (buffer, 0, buffer.Length);
+			}
 		}
 
-		private byte[] crypt (byte[] data)
-		{
-			return cryptor.TransformFinalBlock (data, 0, data.Length);
-		}
-
-		private string decrypt (byte[] data)
-		{
-			byte[] buffer = decryptor.TransformFinalBlock (data, 0, data.Length);
-
-			return Encoding.ASCII.GetString (buffer);
-		}
-
-		private string decrypt (string data)
-		{
-			byte[] buffer = Encoding.ASCII.GetBytes (data);
-			byte[] crypted = decryptor.TransformFinalBlock (buffer, 0, buffer.Length);
-
-			return Encoding.ASCII.GetString (crypted);
-		}
+		RSACryptoServiceProvider rsa;
+		DESCryptoServiceProvider des;
+		ICryptoTransform cryptor;
+		ICryptoTransform decryptor;
 
 		private byte[] xor (byte[] one, byte[] two)
 		{
@@ -254,5 +215,6 @@ namespace JarlooChat
 
 			return res;
 		}
-    }
+	}
 }
+

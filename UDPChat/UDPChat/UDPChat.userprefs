@@ -2,8 +2,8 @@
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.Workbench ActiveDocument="JarloChat.cs">
     <Files>
-      <File FileName="Program.cs" Line="8" Column="18" />
-      <File FileName="JarloChat.cs" Line="72" Column="28" />
+      <File FileName="Program.cs" Line="6" Column="18" />
+      <File FileName="JarloChat.cs" Line="38" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -16,7 +16,9 @@
     </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="/home/alex/Исходники/C#/termprojectc/UDPChat/UDPChat/Program.cs" line="15" column="1" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>
